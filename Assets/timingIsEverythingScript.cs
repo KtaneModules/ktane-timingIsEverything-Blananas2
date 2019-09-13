@@ -2,10 +2,12 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using UnityEngine;
 using KModkit;
 
-public class timingIsEverythingScript : MonoBehaviour {
+public class timingIsEverythingScript : MonoBehaviour
+{
 
     public KMBombModule Module;
     public KMBombInfo Bomb;
@@ -35,17 +37,18 @@ public class timingIsEverythingScript : MonoBehaviour {
     int moduleId;
     private bool moduleSolved;
 
-    void Awake () {
+    void Awake()
+    {
         moduleId = moduleIdCounter++;
 
         Module.OnActivate += delegate () { ModuleStart(); };
         Button.OnInteract += delegate () { PressButton(); return false; };
-        
+
     }
 
     void ModuleStart()
     {
-        
+
         startTime = Mathf.Floor(Bomb.GetTime());
         alfa = UnityEngine.Random.Range(11, startTime - 10);
         bravo = UnityEngine.Random.Range(11, startTime - 10);
@@ -65,32 +68,38 @@ public class timingIsEverythingScript : MonoBehaviour {
             timeA = alfa;
             timeB = bravo;
             timeC = charlie;
-        } else if (alfa >= charlie && charlie >= bravo && alfa >= bravo)
+        }
+        else if (alfa >= charlie && charlie >= bravo && alfa >= bravo)
         {
             timeA = alfa;
             timeB = charlie;
             timeC = bravo;
-        } else if (bravo >= alfa && alfa >= charlie && bravo >= charlie)
+        }
+        else if (bravo >= alfa && alfa >= charlie && bravo >= charlie)
         {
             timeA = bravo;
             timeB = alfa;
             timeC = charlie;
-        } else if (bravo >= charlie && charlie >= alfa && bravo >= alfa)
+        }
+        else if (bravo >= charlie && charlie >= alfa && bravo >= alfa)
         {
             timeA = bravo;
             timeB = charlie;
             timeC = alfa;
-        } else if (charlie >= alfa && alfa >= bravo && charlie >= bravo)
+        }
+        else if (charlie >= alfa && alfa >= bravo && charlie >= bravo)
         {
             timeA = charlie;
             timeB = alfa;
             timeC = bravo;
-        } else if (charlie >= bravo && bravo >= alfa && charlie >= alfa)
+        }
+        else if (charlie >= bravo && bravo >= alfa && charlie >= alfa)
         {
             timeA = charlie;
             timeB = bravo;
             timeC = alfa;
-        } else
+        }
+        else
         {
             Debug.Log("f.");
         }
@@ -145,9 +154,10 @@ public class timingIsEverythingScript : MonoBehaviour {
             strC = s;
         }
     }
-	
-	// Update is called once per frame
-	void Update () {
+
+    // Update is called once per frame
+    void Update()
+    {
         if (stages == 0)
         {
             if (Mathf.Floor(Bomb.GetTime()) < timeA)
@@ -158,7 +168,8 @@ public class timingIsEverythingScript : MonoBehaviour {
                 Text.text = strA;
                 Debug.LogFormat("[Timing is Everything #{0}] Missed Stage 1 time. Strike! New time: {1}", moduleId, strA);
             }
-        } else if (stages == 1)
+        }
+        else if (stages == 1)
         {
             if (Mathf.Floor(Bomb.GetTime()) < timeB)
             {
@@ -168,7 +179,8 @@ public class timingIsEverythingScript : MonoBehaviour {
                 Text.text = strB;
                 Debug.LogFormat("[Timing is Everything #{0}] Missed Stage 2 time. Strike! New time: {1}", moduleId, strB);
             }
-        } else if (stages == 2)
+        }
+        else if (stages == 2)
         {
             if (Mathf.Floor(Bomb.GetTime()) < timeC)
             {
@@ -220,14 +232,15 @@ public class timingIsEverythingScript : MonoBehaviour {
             Text.text = strB;
             Lights[0].GetComponent<MeshRenderer>().material = GreenMat;
             Debug.LogFormat("[Timing is Everything #{0}] Stage 1 complete.", moduleId);
-        } else if (stages == 1 && Mathf.Floor(Bomb.GetTime()) == timeB)
+        }
+        else if (stages == 1 && Mathf.Floor(Bomb.GetTime()) == timeB)
         {
             stages = 2;
             Text.text = strC;
             Lights[1].GetComponent<MeshRenderer>().material = GreenMat;
             Debug.LogFormat("[Timing is Everything #{0}] Stage 2 complete.", moduleId);
         }
-        else if(stages == 2 && Mathf.Floor(Bomb.GetTime()) == timeC)
+        else if (stages == 2 && Mathf.Floor(Bomb.GetTime()) == timeC)
         {
             GetComponent<KMBombModule>().HandlePass();
             moduleSolved = true;
@@ -236,10 +249,92 @@ public class timingIsEverythingScript : MonoBehaviour {
             Lights[2].GetComponent<MeshRenderer>().material = GreenMat;
             Debug.LogFormat("[Timing is Everything #{0}] Stage 3 complete, module solved.", moduleId);
 
-        } else if (stages != 3)
+        }
+        else if (stages != 3)
         {
             GetComponent<KMBombModule>().HandleStrike();
             Debug.LogFormat("[Timing is Everything #{0}] Too early on Stage {1}. Strike!", moduleId, stages + 1);
+        }
+    }
+
+    //twitch plays
+    private bool timeIsValid(string s)
+    {
+        Regex timeRegex1 = new Regex(@"[0-9][0-9]");
+        Regex timeRegex2 = new Regex(@"[0-9][:][0-9][0-9]");
+        Regex timeRegex3 = new Regex(@"[0-9][0-9][:][0-9][0-9]");
+        Regex timeRegex4 = new Regex(@"[0-9][:][0-9][0-9][:][0-9][0-9]");
+        Match match = timeRegex1.Match(s);
+        Match match2 = timeRegex2.Match(s);
+        Match match3 = timeRegex3.Match(s);
+        Match match4 = timeRegex4.Match(s);
+        if (match.Success && s.Length == 2)
+        {
+            return true;
+        }
+        else if (match2.Success && s.Length == 4)
+        {
+            return true;
+        }
+        else if (match3.Success && s.Length == 5)
+        {
+            return true;
+        }
+        else if (match4.Success && s.Length == 7)
+        {
+            return true;
+        }
+        return false;
+    }
+
+    #pragma warning disable 414
+    private readonly string TwitchHelpMessage = @"!{0} submit <time> [Presses the submit button at the specified time] | Supported time formats: ##, #:##, ##:##, #:##:##";
+    #pragma warning restore 414
+    IEnumerator ProcessTwitchCommand(string command)
+    {
+        string[] parameters = command.Split(' ');
+        if (Regex.IsMatch(parameters[0], @"^\s*submit\s*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant))
+        {
+            if (parameters.Length == 2)
+            {
+                if (timeIsValid(parameters[1]))
+                {
+                    yield return null;
+                    if (parameters[1].Length == 2)
+                    {
+                        parameters[1] = "00:" + parameters[1];
+                    }
+                    else if (parameters[1].Length == 4)
+                    {
+                        parameters[1] = "0" + parameters[1];
+                    }
+                    else if(parameters[1].Length == 7)
+                    {
+                        int temp = 0;
+                        int temp2 = 0;
+                        int.TryParse(parameters[1].Substring(0, 1), out temp);
+                        temp *= 60;
+                        int.TryParse(parameters[1].Substring(2, 2), out temp2);
+                        temp += temp2;
+                        string tem = "" + temp;
+                        tem += parameters[1].Substring(4, 3);
+                        parameters[1] = tem;
+                    }
+                    yield return "sendtochat Submit time set for '" + parameters[1] + "'";
+                    if ((int)Bomb.GetTime() < 60)
+                    {
+                        int temp = 0;
+                        int.TryParse(parameters[1].Substring(parameters[1].Length - 2, 2), out temp);
+                        while ((int)Bomb.GetTime() != temp) yield return "trycancel The submit button's press was cancelled due to a cancel request.";
+                    }
+                    else
+                    {
+                        while (!Bomb.GetFormattedTime().Equals(parameters[1])) yield return "trycancel The submit button's press was cancelled due to a cancel request.";
+                    }
+                    Button.OnInteract();
+                }
+            }
+            yield break;
         }
     }
 }
