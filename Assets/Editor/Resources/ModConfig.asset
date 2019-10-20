@@ -21,6 +21,6 @@ MonoBehaviour:
 
 
     The manual can be found here: https://ktane.timwi.de/HTML/Timing%20is%20Everything.html'
-  version: 1.0
+  version: 1.2
   outputFolder: build
   previewImage: {fileID: 2800000, guid: ad46bfda96fb5a740ac1f0057c3d144c, type: 3}
