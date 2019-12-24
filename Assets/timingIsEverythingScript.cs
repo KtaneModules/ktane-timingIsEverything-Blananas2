@@ -521,7 +521,7 @@ public class timingIsEverythingScript : MonoBehaviour
                     }
 
                     Debug.LogFormat("[TiE #{0}] {1}", moduleId, parameters[1]);
-                    //yield return "sendtochat Submit time set for '" + parameters[1] + "'";
+                    yield return "sendtochat Submit time set for '" + parameters[1] + "'";
                     while (true)
                     {
                         String time = Bomb.GetFormattedTime();
