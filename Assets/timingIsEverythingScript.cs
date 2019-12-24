@@ -511,20 +511,27 @@ public class timingIsEverythingScript : MonoBehaviour
                         temp *= 60;
                         int.TryParse(parameters[1].Substring(2, 2), out temp2);
                         temp += temp2;
-                        string tem = "" + temp;
+                        string tem = "";
+                        if(temp < 10)
+                            tem = "0" + temp;
+                        else
+                            tem = "" + temp;
                         tem += parameters[1].Substring(4, 3);
                         parameters[1] = tem;
                     }
-                    yield return "sendtochat Submit time set for '" + parameters[1] + "'";
-                    if ((int)Bomb.GetTime() < 60)
+
+                    Debug.LogFormat("[TiE #{0}] {1}", moduleId, parameters[1]);
+                    //yield return "sendtochat Submit time set for '" + parameters[1] + "'";
+                    while (true)
                     {
-                        int temp = 0;
-                        int.TryParse(parameters[1].Substring(parameters[1].Length - 2, 2), out temp);
-                        while ((int)Bomb.GetTime() != temp) yield return "trycancel The submit button's press was cancelled due to a cancel request.";
-                    }
-                    else
-                    {
-                        while (!Bomb.GetFormattedTime().Equals(parameters[1])) yield return "trycancel The submit button's press was cancelled due to a cancel request.";
+                        String time = Bomb.GetFormattedTime();
+                        int millisecondindex = time.IndexOf('.');
+                        if (millisecondindex != -1)
+                        {
+                            time = "00:"+time.Substring(0, millisecondindex);
+                        }
+                        if (!time.Equals(parameters[1])) yield return "trycancel The submit button's press was cancelled due to a cancel request.";
+                        else break;
                     }
                     Button.OnInteract();
                 }
