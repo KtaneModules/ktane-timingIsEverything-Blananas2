@@ -34,15 +34,11 @@ public class timingIsEverythingScript : MonoBehaviour
     int stages = 0;
     bool active = false;
 
-    bool TimeModeActive;
     bool TwitchPlaysSkipTimeAllowed = true;
     bool timeMode = false;
-
-    bool ZenModeActive;
     bool zenMode = false;
-
-    bool SteadyModeActive;
-    bool steadyMode = false;
+    bool TimeModeActive;
+    bool ZenModeActive;
 
     //Logging
     static int moduleIdCounter = 1;
@@ -63,6 +59,10 @@ public class timingIsEverythingScript : MonoBehaviour
         StartCoroutine(delay());
 
         startTime = Mathf.Floor(Bomb.GetTime());
+
+        if (startTime < 30)
+            startTime = 30;
+        
         alfa = UnityEngine.Random.Range(11, startTime - 10);
         bravo = UnityEngine.Random.Range(11, startTime - 10);
         charlie = UnityEngine.Random.Range(11, startTime - 10);
@@ -169,161 +169,157 @@ public class timingIsEverythingScript : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if(timeMode == false && zenMode == false) // && steadyMode == false
+        if (moduleReady == true)
         {
-            if (stages == 0)
+            if(timeMode == false && zenMode == false)
             {
-                if (Mathf.Floor(Bomb.GetTime()) < timeA)
+                if (stages == 0)
                 {
-                    if (moduleReady == true) {
+                    if (Mathf.Floor(Bomb.GetTime()) < timeA)
+                    {
                         GetComponent<KMBombModule>().HandleStrike();
                         Debug.LogFormat("[Timing is Everything #{0}] Missed Stage 1 time. Strike! New time: {1}", moduleId, strA);
+                        timeA = ((timeA + timeB) / 2) - ((timeA + timeB) / 2) % 1;
+                        GenerateStrings(timeA, strA, 1);
+                        Text.text = strA;
                     }
-                    timeA = ((timeA + timeB) / 2) - ((timeA + timeB) / 2) % 1;
-                    GenerateStrings(timeA, strA, 1);
-                    Text.text = strA;
                 }
-            }
-            else if (stages == 1)
-            {
-                if (Mathf.Floor(Bomb.GetTime()) < timeB)
+                else if (stages == 1)
                 {
-                    if (moduleReady == true)
+                    if (Mathf.Floor(Bomb.GetTime()) < timeB)
                     {
                         GetComponent<KMBombModule>().HandleStrike();
                         Debug.LogFormat("[Timing is Everything #{0}] Missed Stage 2 time. Strike! New time: {1}", moduleId, strB);
+
+                        timeB = ((timeB + timeC) / 2) - ((timeB + timeC) / 2) % 1;
+                        GenerateStrings(timeB, strB, 2);
+                        Text.text = strB;
                     }
-                    timeB = ((timeB + timeC) / 2) - ((timeB + timeC) / 2) % 1;
-                    GenerateStrings(timeB, strB, 2);
-                    Text.text = strB;
                 }
-            }
-            else if (stages == 2)
-            {
-                if (Mathf.Floor(Bomb.GetTime()) < timeC)
+                else if (stages == 2)
                 {
-                    if (moduleReady == true)
+                    if (Mathf.Floor(Bomb.GetTime()) < timeC)
                     {
                         GetComponent<KMBombModule>().HandleStrike();
                         Debug.LogFormat("[Timing is Everything #{0}] Missed Stage 3 time. Strike! New time: {1}", moduleId, strC);
+                        timeC = (timeC / 2) - (timeC / 2) % 1;
+                        GenerateStrings(timeC, strC, 3);
+                        Text.text = strC;
                     }
-                    timeC = (timeC / 2) - (timeC / 2) % 1;
-                    GenerateStrings(timeC, strC, 3);
-                    Text.text = strC;
                 }
-            }
 
-            if (startTime - Mathf.Floor(Bomb.GetTime()) > 1)
-            {
-                active = true;
-            }
-
-            if (timeA == timeB && active == true && stages == 0 && moduleReady == true)
-            {
-                stages = 1;
-                Text.text = strB;
-                Lights[0].GetComponent<MeshRenderer>().material = GreenMat;
-                Debug.LogFormat("[Timing is Everything #{0}] Stage 1 automatically complete due to time becoming the same as Stage 2. {1} {2} {3}", moduleId, strA, strB, strC);
-                
-            }
-            if (timeB == timeC && active == true && stages == 1 && moduleReady == true)
-            {
-                stages = 2;
-                Text.text = strC;
-                Lights[1].GetComponent<MeshRenderer>().material = GreenMat;
-                Debug.LogFormat("[Timing is Everything #{0}] Stage 2 automatically complete due to time becoming the same as Stage 3.", moduleId, strA, strB, strC);
-            }
-            if (timeC < 5 && active == true && stages == 2 && moduleReady == true)
-            {
-                GetComponent<KMBombModule>().HandlePass();
-                moduleSolved = true;
-                stages = 3;
-                Text.text = "!!!";
-                Lights[2].GetComponent<MeshRenderer>().material = GreenMat;
-                Debug.LogFormat("[Timing is Everything #{0}] Stage 3 automatically complete due to time becoming under 5 seconds. Module Solved.", moduleId, strA, strB, strC);
-            }
-        } else if (zenMode == true)
-        {
-            if (stages == 0)
-            {
-                if (Mathf.Floor(Bomb.GetTime()) > timeC)
+                if (startTime - Mathf.Floor(Bomb.GetTime()) > 1)
                 {
-                    GetComponent<KMBombModule>().HandleStrike();
-                    timeC = timeC + (timeC / 2 - (timeC / 2) % 1);
-                    timeB = timeB + timeC;
-                    timeA = timeA + timeC;
-                    GenerateStrings(timeC, strC, 3);
-                    GenerateStrings(timeB, strB, 2);
-                    GenerateStrings(timeA, strA, 1);
-                    Text.text = strC;
-                    Debug.LogFormat("[Timing is Everything #{0}] Missed Stage 1 time. Strike! New time: {1}", moduleId, strC);
-                    Debug.Log("OKAY: " + timeA + " " + timeB + " " + timeC);
+                    active = true;
                 }
-            }
-            else if (stages == 1)
-            {
-                if (Mathf.Floor(Bomb.GetTime()) > timeB)
+
+                if (timeA == timeB && active == true && stages == 0)
                 {
-                    GetComponent<KMBombModule>().HandleStrike();
-                    timeB = timeB + (timeB / 2 - (timeB / 2) % 1);
-                    timeA = timeA + timeB;
-                    GenerateStrings(timeB, strB, 2);
-                    GenerateStrings(timeA, strA, 1);
+                    stages = 1;
                     Text.text = strB;
-                    Debug.LogFormat("[Timing is Everything #{0}] Missed Stage 2 time. Strike! New time: {1}", moduleId, strB);
-                    Debug.Log("OKAY: " + timeA + " " + timeB + " " + timeC);
-                }
-            }
-            else if (stages == 2)
-            {
-                if (Mathf.Floor(Bomb.GetTime()) > timeA)
-                {
-                    GetComponent<KMBombModule>().HandleStrike();
-                    timeA = timeA + (timeA / 2 - (timeA / 2) % 1);
-                    GenerateStrings(timeA, strA, 1);
-                    Text.text = strA;
-                    Debug.LogFormat("[Timing is Everything #{0}] Missed Stage 3 time. Strike! New time: {1}", moduleId, strA);
-                    Debug.Log("OKAY: " + timeA + " " + timeB + " " + timeC);
-                }
-            }
+                    Lights[0].GetComponent<MeshRenderer>().material = GreenMat;
+                    Debug.LogFormat("[Timing is Everything #{0}] Stage 1 automatically complete due to time becoming the same as Stage 2. {1} {2} {3}", moduleId, strA, strB, strC);
 
-            if (startTime - Mathf.Floor(Bomb.GetTime()) > 1)
+                }
+                if (timeB == timeC && active == true && stages == 1)
+                {
+                    stages = 2;
+                    Text.text = strC;
+                    Lights[1].GetComponent<MeshRenderer>().material = GreenMat;
+                    Debug.LogFormat("[Timing is Everything #{0}] Stage 2 automatically complete due to time becoming the same as Stage 3.", moduleId, strA, strB, strC);
+                }
+                if (timeC < 5 && active == true && stages == 2)
+                {
+                    GetComponent<KMBombModule>().HandlePass();
+                    moduleSolved = true;
+                    stages = 3;
+                    Text.text = "!!!";
+                    Lights[2].GetComponent<MeshRenderer>().material = GreenMat;
+                    Debug.LogFormat("[Timing is Everything #{0}] Stage 3 automatically complete due to time becoming under 5 seconds. Module Solved.", moduleId, strA, strB, strC);
+                }
+            } else if (zenMode == true)
             {
-                active = true;
-            }
+                if (stages == 0)
+                {
+                    if (Mathf.Floor(Bomb.GetTime()) > timeC)
+                    {
+                        GetComponent<KMBombModule>().HandleStrike();
+                        timeC = timeC + (timeC / 2 - (timeC / 2) % 1);
+                        timeB = timeB + timeC;
+                        timeA = timeA + timeC;
+                        GenerateStrings(timeC, strC, 3);
+                        GenerateStrings(timeB, strB, 2);
+                        GenerateStrings(timeA, strA, 1);
+                        Text.text = strC;
+                        Debug.LogFormat("[Timing is Everything #{0}] Missed Stage 1 time. Strike! New time: {1}", moduleId, strC);
+                        Debug.Log("OKAY: " + timeA + " " + timeB + " " + timeC);
+                    }
+                }
+                else if (stages == 1)
+                {
+                    if (Mathf.Floor(Bomb.GetTime()) > timeB)
+                    {
+                        GetComponent<KMBombModule>().HandleStrike();
+                        timeB = timeB + (timeB / 2 - (timeB / 2) % 1);
+                        timeA = timeA + timeB;
+                        GenerateStrings(timeB, strB, 2);
+                        GenerateStrings(timeA, strA, 1);
+                        Text.text = strB;
+                        Debug.LogFormat("[Timing is Everything #{0}] Missed Stage 2 time. Strike! New time: {1}", moduleId, strB);
+                        Debug.Log("OKAY: " + timeA + " " + timeB + " " + timeC);
+                    }
+                }
+                else if (stages == 2)
+                {
+                    if (Mathf.Floor(Bomb.GetTime()) > timeA)
+                    {
+                        GetComponent<KMBombModule>().HandleStrike();
+                        timeA = timeA + (timeA / 2 - (timeA / 2) % 1);
+                        GenerateStrings(timeA, strA, 1);
+                        Text.text = strA;
+                        Debug.LogFormat("[Timing is Everything #{0}] Missed Stage 3 time. Strike! New time: {1}", moduleId, strA);
+                        Debug.Log("OKAY: " + timeA + " " + timeB + " " + timeC);
+                    }
+                }
 
-            if (timeA == timeB && active == true && stages == 0)
-            {
-                if (zenMode == false) { 
-                stages = 1;
-                Text.text = strB;
-                Lights[0].GetComponent<MeshRenderer>().material = GreenMat;
-                Debug.LogFormat("[Timing is Everything #{0}] Stage 1 automatically complete due to time becoming the same as Stage 2. {1} {2} {3}", moduleId, strA, strB, strC);
-                }
-                else
+                if (startTime - Mathf.Floor(Bomb.GetTime()) > 1)
                 {
-                    timeA = timeA * 2;
+                    active = true;
                 }
-            }
-            if (timeB == timeC && active == true && stages == 1)
-            {
-                stages = 2;
-                Text.text = strC;
-                if (zenMode == true)
+
+                if (timeA == timeB && active == true && stages == 0)
                 {
-                    Text.text = strA;
+                    if (zenMode == false) {
+                    stages = 1;
+                    Text.text = strB;
+                    Lights[0].GetComponent<MeshRenderer>().material = GreenMat;
+                    Debug.LogFormat("[Timing is Everything #{0}] Stage 1 automatically complete due to time becoming the same as Stage 2. {1} {2} {3}", moduleId, strA, strB, strC);
+                    }
+                    else
+                    {
+                        timeA = timeA * 2;
+                    }
                 }
-                Lights[1].GetComponent<MeshRenderer>().material = GreenMat;
-                Debug.LogFormat("[Timing is Everything #{0}] Stage 2 automatically complete due to time becoming the same as Stage 3.", moduleId, strA, strB, strC);
-            }
-            if (timeC < 5 && active == true && stages == 2)
-            {
-                GetComponent<KMBombModule>().HandlePass();
-                moduleSolved = true;
-                stages = 3;
-                Text.text = "!!!";
-                Lights[2].GetComponent<MeshRenderer>().material = GreenMat;
-                Debug.LogFormat("[Timing is Everything #{0}] Stage 3 automatically complete due to time becoming under 5 seconds. Module Solved.", moduleId, strA, strB, strC);
+                if (timeB == timeC && active == true && stages == 1)
+                {
+                    stages = 2;
+                    Text.text = strC;
+                    if (zenMode == true)
+                    {
+                        Text.text = strA;
+                    }
+                    Lights[1].GetComponent<MeshRenderer>().material = GreenMat;
+                    Debug.LogFormat("[Timing is Everything #{0}] Stage 2 automatically complete due to time becoming the same as Stage 3.", moduleId, strA, strB, strC);
+                }
+                if (timeC < 5 && active == true && stages == 2)
+                {
+                    GetComponent<KMBombModule>().HandlePass();
+                    moduleSolved = true;
+                    stages = 3;
+                    Text.text = "!!!";
+                    Lights[2].GetComponent<MeshRenderer>().material = GreenMat;
+                    Debug.LogFormat("[Timing is Everything #{0}] Stage 3 automatically complete due to time becoming under 5 seconds. Module Solved.", moduleId, strA, strB, strC);
+                }
             }
         }
     }
@@ -416,6 +412,7 @@ public class timingIsEverythingScript : MonoBehaviour
     private IEnumerator delay()
     {
         yield return new WaitForSeconds(1f);
+
         if (TimeModeActive)
         {
             timeMode = true;
@@ -436,12 +433,6 @@ public class timingIsEverythingScript : MonoBehaviour
             //GenerateStrings(timeB, strB, 2);
             //GenerateStrings(timeC, strC, 3);
             Text.text = strC;
-        } else if (SteadyModeActive)
-        {
-            steadyMode = true;
-            Debug.LogFormat("[Timing is Everything #{0}] Current Mode: Steady", moduleId);
-            Debug.LogFormat("[Timing is Everything #{0}] Steady Mode is active! This means... just be careful I haven't dealt with this yet, sorry!", moduleId);
-            Button.GetComponent<MeshRenderer>().material = buttonColors[3];
         }
         else
         {
@@ -520,7 +511,7 @@ public class timingIsEverythingScript : MonoBehaviour
                         parameters[1] = tem;
                     }
 
-                    Debug.LogFormat("[TiE #{0}] {1}", moduleId, parameters[1]);
+                    Debug.LogFormat("[Timing is Everything #{0}] {1}", moduleId, parameters[1]);
                     yield return "sendtochat Submit time set for '" + parameters[1] + "'";
                     while (true)
                     {
