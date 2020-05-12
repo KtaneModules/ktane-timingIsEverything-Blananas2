@@ -44,6 +44,7 @@ public class timingIsEverythingScript : MonoBehaviour
     static int moduleIdCounter = 1;
     int moduleId;
     private bool moduleSolved;
+    private bool tpCorrect = false;
 
     void Awake()
     {
@@ -336,6 +337,7 @@ public class timingIsEverythingScript : MonoBehaviour
                 Text.text = strB;
                 Lights[0].GetComponent<MeshRenderer>().material = GreenMat;
                 Debug.LogFormat("[Timing is Everything #{0}] Stage 1 complete.", moduleId);
+                tpCorrect = true;
             }
             else if (stages == 1 && Mathf.Floor(Bomb.GetTime()) == timeB)
             {
@@ -343,6 +345,7 @@ public class timingIsEverythingScript : MonoBehaviour
                 Text.text = strC;
                 Lights[1].GetComponent<MeshRenderer>().material = GreenMat;
                 Debug.LogFormat("[Timing is Everything #{0}] Stage 2 complete.", moduleId);
+                tpCorrect = true;
             }
             else if (stages == 2 && Mathf.Floor(Bomb.GetTime()) == timeC)
             {
@@ -352,6 +355,7 @@ public class timingIsEverythingScript : MonoBehaviour
                 Text.text = "!!!";
                 Lights[2].GetComponent<MeshRenderer>().material = GreenMat;
                 Debug.LogFormat("[Timing is Everything #{0}] Stage 3 complete, module solved.", moduleId);
+                tpCorrect = true;
 
             }
             else if (stages != 3)
@@ -374,6 +378,7 @@ public class timingIsEverythingScript : MonoBehaviour
                 Text.text = strB;
                 Lights[0].GetComponent<MeshRenderer>().material = GreenMat;
                 Debug.LogFormat("[Timing is Everything #{0}] Stage 1 complete.", moduleId);
+                tpCorrect = true;
             }
             else if (stages == 1 && Mathf.Floor(Bomb.GetTime()) == timeB)
             {
@@ -382,6 +387,7 @@ public class timingIsEverythingScript : MonoBehaviour
                 Text.text = strA;
                 Lights[1].GetComponent<MeshRenderer>().material = GreenMat;
                 Debug.LogFormat("[Timing is Everything #{0}] Stage 2 complete.", moduleId);
+                tpCorrect = true;
                 Debug.Log(timeA);
             }
             else if (stages == 2 && Mathf.Floor(Bomb.GetTime()) == timeA)
@@ -392,6 +398,7 @@ public class timingIsEverythingScript : MonoBehaviour
                 Text.text = "!!!";
                 Lights[2].GetComponent<MeshRenderer>().material = GreenMat;
                 Debug.LogFormat("[Timing is Everything #{0}] Stage 3 complete, module solved.", moduleId);
+                tpCorrect = true;
 
             }
             else if (stages != 3)
@@ -525,6 +532,11 @@ public class timingIsEverythingScript : MonoBehaviour
                         else break;
                     }
                     Button.OnInteract();
+                    if (tpCorrect) 
+                    {
+                        yield return "awardpoints 1";
+                        tpCorrect = false;
+                    }
                 }
             }
             yield break;
