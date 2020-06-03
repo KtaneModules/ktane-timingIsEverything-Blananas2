@@ -57,8 +57,6 @@ public class timingIsEverythingScript : MonoBehaviour
 
     void ModuleStart()
     {
-        StartCoroutine(delay());
-
         startTime = Mathf.Floor(Bomb.GetTime());
 
         if (startTime < 30)
@@ -128,6 +126,34 @@ public class timingIsEverythingScript : MonoBehaviour
         GenerateStrings(timeC, strC, 3);
 
         Text.text = strA;
+
+        if (TimeModeActive)
+        {
+            timeMode = true;
+            Debug.LogFormat("[Timing is Everything #{0}] Current Mode: Time", moduleId);
+            Debug.LogFormat("[Timing is Everything #{0}] Time Mode is active! This means that new times will NOT be generated and no strikes will occur unless pressed at an incorrect time!", moduleId);
+            Button.GetComponent<MeshRenderer>().material = buttonColors[1];
+        }
+        else if (ZenModeActive)
+        {
+            zenMode = true;
+            Debug.LogFormat("[Timing is Everything #{0}] Current Mode: Zen", moduleId);
+            Debug.LogFormat("[Timing is Everything #{0}] Zen Mode is active! This means that times go up instead of down!", moduleId);
+            Button.GetComponent<MeshRenderer>().material = buttonColors[2];
+            timeA *= 2;
+            //timeB += 30;
+            //timeC += 30;
+            GenerateStrings(timeA, strA, 1);
+            //GenerateStrings(timeB, strB, 2);
+            //GenerateStrings(timeC, strC, 3);
+            Text.text = strC;
+        }
+        else
+        {
+            Debug.LogFormat("[Timing is Everything #{0}] Current Mode: Normal", moduleId);
+        }
+        Debug.LogFormat("[Timing is Everything #{0}] The times are: {1}, {2}, and {3}.", moduleId, strA, strB, strC);
+        moduleReady = true;
     }
 
     void GenerateStrings(float t, string s, int n)
@@ -327,6 +353,8 @@ public class timingIsEverythingScript : MonoBehaviour
 
     void PressButton()
     {
+        if (moduleSolved || !moduleReady)
+            return;
         Button.AddInteractionPunch();
         GetComponent<KMAudio>().PlayGameSoundAtTransform(KMSoundOverride.SoundEffect.ButtonPress, transform);
         if (zenMode == false)
@@ -356,7 +384,6 @@ public class timingIsEverythingScript : MonoBehaviour
                 Lights[2].GetComponent<MeshRenderer>().material = GreenMat;
                 Debug.LogFormat("[Timing is Everything #{0}] Stage 3 complete, module solved.", moduleId);
                 tpCorrect = true;
-
             }
             else if (stages != 3)
             {
@@ -416,40 +443,6 @@ public class timingIsEverythingScript : MonoBehaviour
         }
     }
 
-    private IEnumerator delay()
-    {
-        yield return new WaitForSeconds(1f);
-
-        if (TimeModeActive)
-        {
-            timeMode = true;
-            Debug.LogFormat("[Timing is Everything #{0}] Current Mode: Time", moduleId);
-            Debug.LogFormat("[Timing is Everything #{0}] Time Mode is active! This means that new times will NOT be generated and no strikes will occur unless pressed at an incorrect time!", moduleId);
-            Button.GetComponent<MeshRenderer>().material = buttonColors[1];
-        }
-        else if (ZenModeActive)
-        {
-            zenMode = true;
-            Debug.LogFormat("[Timing is Everything #{0}] Current Mode: Zen", moduleId);
-            Debug.LogFormat("[Timing is Everything #{0}] Zen Mode is active! This means that times go up instead of down!", moduleId);
-            Button.GetComponent<MeshRenderer>().material = buttonColors[2];
-            timeA *= 2;
-            //timeB += 30;
-            //timeC += 30;
-            GenerateStrings(timeA, strA, 1);
-            //GenerateStrings(timeB, strB, 2);
-            //GenerateStrings(timeC, strC, 3);
-            Text.text = strC;
-        }
-        else
-        {
-            Debug.LogFormat("[Timing is Everything #{0}] Current Mode: Normal", moduleId);
-        }
-        moduleReady = true;
-        Debug.LogFormat("[Timing is Everything #{0}] The times are: {1}, {2}, and {3}.", moduleId, strA, strB, strC);
-        StopCoroutine("delay");
-    }
-
     //twitch plays
     private bool timeIsValid(string s)
     {
@@ -493,13 +486,18 @@ public class timingIsEverythingScript : MonoBehaviour
                 if (timeIsValid(parameters[1]))
                 {
                     yield return null;
+                    int tempmins = 0;
+                    int tempsecs = 0;
                     if (parameters[1].Length == 2)
                     {
                         parameters[1] = "00:" + parameters[1];
+                        tempsecs = int.Parse(parameters[1].Split(':')[1]);
                     }
                     else if (parameters[1].Length == 4)
                     {
                         parameters[1] = "0" + parameters[1];
+                        tempmins = int.Parse(parameters[1].Split(':')[0]);
+                        tempsecs = int.Parse(parameters[1].Split(':')[1]);
                     }
                     else if(parameters[1].Length == 7)
                     {
@@ -516,13 +514,32 @@ public class timingIsEverythingScript : MonoBehaviour
                             tem = "" + temp;
                         tem += parameters[1].Substring(4, 3);
                         parameters[1] = tem;
+                        tempmins = int.Parse(parameters[1].Split(':')[0]);
+                        tempsecs = int.Parse(parameters[1].Split(':')[1]);
                     }
 
-                    Debug.LogFormat("[Timing is Everything #{0}] {1}", moduleId, parameters[1]);
-                    yield return "sendtochat Submit time set for '" + parameters[1] + "'";
+                    int timeToGo = 0;
+                    if (!zenMode)
+                        timeToGo = (int)Bomb.GetTime() - ((tempmins * 60) + tempsecs);
+                    else
+                        timeToGo = (tempmins * 60) + tempsecs - (int)Bomb.GetTime();
+                    if (timeToGo < 0)
+                    {
+                        yield return "sendtochaterror Submission time of '" + parameters[1] + "' has already passed!";
+                        yield break;
+                    }
+                    yield return "sendtochat Submission time set for '" + parameters[1] + "'!";
+                    if (Bomb.GetModuleNames().Count() - Bomb.GetSolvedModuleNames().Count() == 1)
+                    {
+                        yield return "timeskip " + ((tempmins * 60) + tempsecs + 1);
+                    }
+                    else if (timeToGo > 15)
+                    {
+                        yield return "waiting music";
+                    }
                     while (true)
                     {
-                        String time = Bomb.GetFormattedTime();
+                        string time = Bomb.GetFormattedTime();
                         int millisecondindex = time.IndexOf('.');
                         if (millisecondindex != -1)
                         {
@@ -531,6 +548,7 @@ public class timingIsEverythingScript : MonoBehaviour
                         if (!time.Equals(parameters[1])) yield return "trycancel The submit button's press was cancelled due to a cancel request.";
                         else break;
                     }
+                    yield return "end waiting music";
                     Button.OnInteract();
                     if (tpCorrect) 
                     {
