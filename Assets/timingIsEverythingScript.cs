@@ -444,120 +444,50 @@ public class timingIsEverythingScript : MonoBehaviour
     }
 
     //twitch plays
-    private bool timeIsValid(string s)
-    {
-        Regex timeRegex1 = new Regex(@"[0-9][0-9]");
-        Regex timeRegex2 = new Regex(@"[0-9][:][0-9][0-9]");
-        Regex timeRegex3 = new Regex(@"[0-9][0-9][:][0-9][0-9]");
-        Regex timeRegex4 = new Regex(@"[0-9][:][0-9][0-9][:][0-9][0-9]");
-        Match match = timeRegex1.Match(s);
-        Match match2 = timeRegex2.Match(s);
-        Match match3 = timeRegex3.Match(s);
-        Match match4 = timeRegex4.Match(s);
-        if (match.Success && s.Length == 2)
-        {
-            return true;
-        }
-        else if (match2.Success && s.Length == 4)
-        {
-            return true;
-        }
-        else if (match3.Success && s.Length == 5)
-        {
-            return true;
-        }
-        else if (match4.Success && s.Length == 7)
-        {
-            return true;
-        }
-        return false;
-    }
-
+    private bool TwitchZenMode;
     #pragma warning disable 414
-    private readonly string TwitchHelpMessage = @"!{0} submit <time> [Presses the submit button at the specified time] | Supported time formats: ##, #:##, ##:##, #:##:##";
+    private readonly string TwitchHelpMessage = @"!{0} submit|press at|on <time> [Presses the submit button at the specified time.]";
     #pragma warning restore 414
     IEnumerator ProcessTwitchCommand(string command)
     {
-        string[] parameters = command.Split(' ');
-        if (Regex.IsMatch(parameters[0], @"^\s*submit\s*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant))
-        {
-            if (parameters.Length == 2)
-            {
-                if (timeIsValid(parameters[1]))
-                {
-                    yield return null;
-                    int tempmins = 0;
-                    int tempsecs = 0;
-                    if (parameters[1].Length == 2)
-                    {
-                        parameters[1] = "00:" + parameters[1];
-                        tempsecs = int.Parse(parameters[1].Split(':')[1]);
-                    }
-                    else if (parameters[1].Length == 4)
-                    {
-                        parameters[1] = "0" + parameters[1];
-                        tempmins = int.Parse(parameters[1].Split(':')[0]);
-                        tempsecs = int.Parse(parameters[1].Split(':')[1]);
-                    }
-                    else if(parameters[1].Length == 7)
-                    {
-                        int temp = 0;
-                        int temp2 = 0;
-                        int.TryParse(parameters[1].Substring(0, 1), out temp);
-                        temp *= 60;
-                        int.TryParse(parameters[1].Substring(2, 2), out temp2);
-                        temp += temp2;
-                        string tem = "";
-                        if(temp < 10)
-                            tem = "0" + temp;
-                        else
-                            tem = "" + temp;
-                        tem += parameters[1].Substring(4, 3);
-                        parameters[1] = tem;
-                        tempmins = int.Parse(parameters[1].Split(':')[0]);
-                        tempsecs = int.Parse(parameters[1].Split(':')[1]);
-                    }
+        Match m;
+        int commandSeconds;
 
-                    int timeToGo = 0;
-                    if (!zenMode)
-                        timeToGo = (int)Bomb.GetTime() - ((tempmins * 60) + tempsecs);
-                    else
-                        timeToGo = (tempmins * 60) + tempsecs - (int)Bomb.GetTime();
-                    if (timeToGo < 0)
-                    {
-                        yield return "sendtochaterror Submission time of '" + parameters[1] + "' has already passed!";
-                        yield break;
-                    }
-                    yield return "sendtochat Submission time set for '" + parameters[1] + "'!";
-                    if (Bomb.GetModuleNames().Count() - Bomb.GetSolvedModuleNames().Count() == 1)
-                    {
-                        yield return "timeskip " + ((tempmins * 60) + tempsecs + 1);
-                    }
-                    else if (timeToGo > 15)
-                    {
-                        yield return "waiting music";
-                    }
-                    while (true)
-                    {
-                        string time = Bomb.GetFormattedTime();
-                        int millisecondindex = time.IndexOf('.');
-                        if (millisecondindex != -1)
-                        {
-                            time = "00:"+time.Substring(0, millisecondindex);
-                        }
-                        if (!time.Equals(parameters[1])) yield return "trycancel The submit button's press was cancelled due to a cancel request.";
-                        else break;
-                    }
-                    yield return "end waiting music";
-                    Button.OnInteract();
-                    if (tpCorrect) 
-                    {
-                        yield return "awardpoints 1";
-                        tpCorrect = false;
-                    }
-                }
-            }
+        m = Regex.Match(command, @"^(?:submit|press)\s*(?:at|on)?\s*([0-9]+:)?([0-9]+):([0-5][0-9])$");
+        if (!m.Success || m.Groups[1].Success && int.Parse(m.Groups[2].Value) > 59) //Invalid command or time format with hour while having > 59 minutes (eg. 2:99:00)
             yield break;
+
+        commandSeconds = (!m.Groups[1].Success ? 0 : int.Parse(m.Groups[1].Value.Replace(":", ""))) * 3600 + int.Parse(m.Groups[2].Value) * 60 + int.Parse(m.Groups[3].Value);
+        
+        if (!TwitchZenMode) {
+            if (Mathf.FloorToInt(Bomb.GetTime()) < commandSeconds) yield break;
         }
+        else if (Mathf.FloorToInt(Bomb.GetTime()) > commandSeconds) yield break;
+
+        yield return null;
+        var timeToSkipTo = commandSeconds;
+        var music = false;
+        if (TwitchZenMode) {
+            timeToSkipTo = commandSeconds - 5;
+            if (commandSeconds - Bomb.GetTime() > 15) yield return "skiptime " + timeToSkipTo;
+            if (commandSeconds - Bomb.GetTime() > 10) music = true;
+        } else {
+            timeToSkipTo = commandSeconds + 5;
+            if (Bomb.GetTime() - commandSeconds > 15) yield return "skiptime " + timeToSkipTo;
+            if (Bomb.GetTime() - commandSeconds > 10) music = true;
+        }
+
+        if (music) yield return "waiting music";
+        while (Mathf.FloorToInt(Bomb.GetTime()) != commandSeconds) 
+            yield return "trycancel Button wasn't pressed due to request to cancel.";
+        if (music) yield return "end waiting music";
+        Button.OnInteract();
+        if (tpCorrect) 
+        {
+            yield return "awardpoints 1";
+            tpCorrect = false;
+        }
+        
+        yield break;
     }
 }
