@@ -444,7 +444,6 @@ public class timingIsEverythingScript : MonoBehaviour
     }
 
     //twitch plays
-    private bool TwitchZenMode;
     #pragma warning disable 414
     private readonly string TwitchHelpMessage = @"!{0} submit|press at|on <time> [Presses the submit button at the specified time.]";
     #pragma warning restore 414
@@ -458,8 +457,9 @@ public class timingIsEverythingScript : MonoBehaviour
             yield break;
 
         commandSeconds = (!m.Groups[1].Success ? 0 : int.Parse(m.Groups[1].Value.Replace(":", ""))) * 3600 + int.Parse(m.Groups[2].Value) * 60 + int.Parse(m.Groups[3].Value);
-        
-        if (!TwitchZenMode) {
+
+        if (!zenMode)
+        {
             if (Mathf.FloorToInt(Bomb.GetTime()) < commandSeconds) yield break;
         }
         else if (Mathf.FloorToInt(Bomb.GetTime()) > commandSeconds) yield break;
@@ -467,27 +467,30 @@ public class timingIsEverythingScript : MonoBehaviour
         yield return null;
         var timeToSkipTo = commandSeconds;
         var music = false;
-        if (TwitchZenMode) {
+        if (zenMode)
+        {
             timeToSkipTo = commandSeconds - 5;
             if (commandSeconds - Bomb.GetTime() > 15) yield return "skiptime " + timeToSkipTo;
             if (commandSeconds - Bomb.GetTime() > 10) music = true;
-        } else {
+        }
+        else
+        {
             timeToSkipTo = commandSeconds + 5;
             if (Bomb.GetTime() - commandSeconds > 15) yield return "skiptime " + timeToSkipTo;
             if (Bomb.GetTime() - commandSeconds > 10) music = true;
         }
 
         if (music) yield return "waiting music";
-        while (Mathf.FloorToInt(Bomb.GetTime()) != commandSeconds) 
+        while (Mathf.FloorToInt(Bomb.GetTime()) != commandSeconds)
             yield return "trycancel Button wasn't pressed due to request to cancel.";
         if (music) yield return "end waiting music";
         Button.OnInteract();
-        if (tpCorrect) 
+        if (tpCorrect)
         {
             yield return "awardpoints 1";
             tpCorrect = false;
         }
-        
+
         yield break;
     }
 }
