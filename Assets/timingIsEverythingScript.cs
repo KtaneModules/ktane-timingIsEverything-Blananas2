@@ -1,17 +1,12 @@
 using System;
 using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text.RegularExpressions;
 using UnityEngine;
-using KModkit;
 
 public class timingIsEverythingScript : MonoBehaviour
 {
-
     public KMBombModule Module;
     public KMBombInfo Bomb;
-    public KMAudio Audio;
 
     public KMSelectable Button;
     public GameObject[] Lights;
@@ -19,43 +14,45 @@ public class timingIsEverythingScript : MonoBehaviour
     public TextMesh Text;
     public Material[] buttonColors;
 
-    bool moduleReady = false;
-    float startTime = 0;
-    float alfa = 0;
-    float bravo = 0;
-    float charlie = 0;
-    float timeA = 0;
-    float timeB = 0;
-    float timeC = 0;
-    string strA = "";
-    string strB = "";
-    string strC = "";
-    int boo = 0;
-    int stages = 0;
-    bool active = false;
+    private bool moduleReady;
+    private float startTime;
+    private float alfa;
+    private float bravo;
+    private float charlie;
+    private float timeA;
+    private float timeB;
+    private float timeC;
+    private string strA;
+    private string strB;
+    private string strC;
+    private int stages;
+    private bool active;
 
-    bool TwitchPlaysSkipTimeAllowed = true;
-    bool timeMode = false;
-    bool zenMode = false;
-    bool TimeModeActive;
-    bool ZenModeActive;
+    private bool TwitchPlaysSkipTimeAllowed = true;
+    private bool timeMode = false;
+    private bool zenMode = false;
+    private bool TimeModeActive;
+    private bool ZenModeActive;
 
     //Logging
     static int moduleIdCounter = 1;
     int moduleId;
     private bool moduleSolved;
-    private bool tpCorrect = false;
+    private bool tpCorrect;
 
-    void Awake()
+    private void Awake()
     {
         moduleId = moduleIdCounter++;
 
-        Module.OnActivate += delegate () { ModuleStart(); };
-        Button.OnInteract += delegate () { PressButton(); return false; };
-
+        Module.OnActivate += ModuleStart;
+        Button.OnInteract += delegate
+        {
+            PressButton();
+            return false;
+        };
     }
 
-    void ModuleStart()
+    private void ModuleStart()
     {
         startTime = Mathf.Floor(Bomb.GetTime());
 
@@ -131,14 +128,18 @@ public class timingIsEverythingScript : MonoBehaviour
         {
             timeMode = true;
             Debug.LogFormat("[Timing is Everything #{0}] Current Mode: Time", moduleId);
-            Debug.LogFormat("[Timing is Everything #{0}] Time Mode is active! This means that new times will NOT be generated and no strikes will occur unless pressed at an incorrect time!", moduleId);
+            Debug.LogFormat(
+                "[Timing is Everything #{0}] Time Mode is active! This means that new times will NOT be generated and no strikes will occur unless pressed at an incorrect time!",
+                moduleId);
             Button.GetComponent<MeshRenderer>().material = buttonColors[1];
         }
         else if (ZenModeActive)
         {
             zenMode = true;
             Debug.LogFormat("[Timing is Everything #{0}] Current Mode: Zen", moduleId);
-            Debug.LogFormat("[Timing is Everything #{0}] Zen Mode is active! This means that times go up instead of down!", moduleId);
+            Debug.LogFormat(
+                "[Timing is Everything #{0}] Zen Mode is active! This means that times go up instead of down!",
+                moduleId);
             Button.GetComponent<MeshRenderer>().material = buttonColors[2];
             timeA *= 2;
             //timeB += 30;
@@ -152,11 +153,12 @@ public class timingIsEverythingScript : MonoBehaviour
         {
             Debug.LogFormat("[Timing is Everything #{0}] Current Mode: Normal", moduleId);
         }
+
         Debug.LogFormat("[Timing is Everything #{0}] The times are: {1}, {2}, and {3}.", moduleId, strA, strB, strC);
         moduleReady = true;
     }
 
-    void GenerateStrings(float t, string s, int n)
+    private void GenerateStrings(float t, string s, int n)
     {
         charlie = t % 60;
         bravo = ((t - charlie) % 3600) / 60;
@@ -179,60 +181,66 @@ public class timingIsEverythingScript : MonoBehaviour
             s = alfa + ":0" + bravo + ":0" + charlie;
         }
 
-        if (n == 1)
+        switch (n)
         {
-            strA = s;
-        }
-        else if (n == 2)
-        {
-            strB = s;
-        }
-        else if (n == 3)
-        {
-            strC = s;
+            case 1:
+                strA = s;
+                break;
+            case 2:
+                strB = s;
+                break;
+            case 3:
+                strC = s;
+                break;
         }
     }
 
     // Update is called once per frame
-    void Update()
+    private void Update()
     {
-        if (moduleReady == true)
+        if (moduleReady && !moduleSolved)
         {
-            if(timeMode == false && zenMode == false)
+            if (!timeMode && !zenMode)
             {
-                if (stages == 0)
+                switch (stages)
                 {
-                    if (Mathf.Floor(Bomb.GetTime()) < timeA)
-                    {
-                        GetComponent<KMBombModule>().HandleStrike();
-                        Debug.LogFormat("[Timing is Everything #{0}] Missed Stage 1 time. Strike! New time: {1}", moduleId, strA);
-                        timeA = (((timeA + timeB) / 2) - ((timeA + timeB) / 2) % 1)-1;
-                        GenerateStrings(timeA, strA, 1);
-                        Text.text = strA;
-                    }
-                }
-                else if (stages == 1)
-                {
-                    if (Mathf.Floor(Bomb.GetTime()) < timeB)
-                    {
-                        GetComponent<KMBombModule>().HandleStrike();
-                        Debug.LogFormat("[Timing is Everything #{0}] Missed Stage 2 time. Strike! New time: {1}", moduleId, strB);
+                    case 0:
+                        if (Mathf.Floor(Bomb.GetTime()) < timeA)
+                        {
+                            GetComponent<KMBombModule>().HandleStrike();
+                            Debug.LogFormat("[Timing is Everything #{0}] Missed Stage 1 time. Strike! New time: {1}",
+                                moduleId, strA);
+                            timeA = (((timeA + timeB) / 2) - ((timeA + timeB) / 2) % 1) - 1;
+                            GenerateStrings(timeA, strA, 1);
+                            Text.text = strA;
+                        }
 
-                        timeB = (((timeB + timeC) / 2) - ((timeB + timeC) / 2) % 1)-1;
-                        GenerateStrings(timeB, strB, 2);
-                        Text.text = strB;
-                    }
-                }
-                else if (stages == 2)
-                {
-                    if (Mathf.Floor(Bomb.GetTime()) < timeC)
-                    {
-                        GetComponent<KMBombModule>().HandleStrike();
-                        Debug.LogFormat("[Timing is Everything #{0}] Missed Stage 3 time. Strike! New time: {1}", moduleId, strC);
-                        timeC = ((timeC / 2) - (timeC / 2) % 1)-1;
-                        GenerateStrings(timeC, strC, 3);
-                        Text.text = strC;
-                    }
+                        break;
+                    case 1:
+                        if (Mathf.Floor(Bomb.GetTime()) < timeB)
+                        {
+                            GetComponent<KMBombModule>().HandleStrike();
+                            Debug.LogFormat("[Timing is Everything #{0}] Missed Stage 2 time. Strike! New time: {1}",
+                                moduleId, strB);
+
+                            timeB = (((timeB + timeC) / 2) - ((timeB + timeC) / 2) % 1) - 1;
+                            GenerateStrings(timeB, strB, 2);
+                            Text.text = strB;
+                        }
+
+                        break;
+                    case 2:
+                        if (Mathf.Floor(Bomb.GetTime()) < timeC)
+                        {
+                            GetComponent<KMBombModule>().HandleStrike();
+                            Debug.LogFormat("[Timing is Everything #{0}] Missed Stage 3 time. Strike! New time: {1}",
+                                moduleId, strC);
+                            timeC = ((timeC / 2) - (timeC / 2) % 1) - 1;
+                            GenerateStrings(timeC, strC, 3);
+                            Text.text = strC;
+                        }
+
+                        break;
                 }
 
                 if (startTime - Mathf.Floor(Bomb.GetTime()) > 1)
@@ -240,31 +248,39 @@ public class timingIsEverythingScript : MonoBehaviour
                     active = true;
                 }
 
-                if (timeA == timeB && active == true && stages == 0)
+                if (timeA == timeB && active && stages == 0)
                 {
                     stages = 1;
                     Text.text = strB;
                     Lights[0].GetComponent<MeshRenderer>().material = GreenMat;
-                    Debug.LogFormat("[Timing is Everything #{0}] Stage 1 automatically complete due to time becoming the same as Stage 2. {1} {2} {3}", moduleId, strA, strB, strC);
-
+                    Debug.LogFormat(
+                        "[Timing is Everything #{0}] Stage 1 automatically complete due to time becoming the same as Stage 2. {1} {2} {3}",
+                        moduleId, strA, strB, strC);
                 }
-                if (timeB == timeC && active == true && stages == 1)
+
+                if (timeB == timeC && active && stages == 1)
                 {
                     stages = 2;
                     Text.text = strC;
                     Lights[1].GetComponent<MeshRenderer>().material = GreenMat;
-                    Debug.LogFormat("[Timing is Everything #{0}] Stage 2 automatically complete due to time becoming the same as Stage 3.", moduleId, strA, strB, strC);
+                    Debug.LogFormat(
+                        "[Timing is Everything #{0}] Stage 2 automatically complete due to time becoming the same as Stage 3.",
+                        moduleId);
                 }
-                if (timeC < 5 && active == true && stages == 2)
+
+                if (timeC < 5 && active && stages == 2)
                 {
                     GetComponent<KMBombModule>().HandlePass();
                     moduleSolved = true;
                     stages = 3;
                     Text.text = "!!!";
                     Lights[2].GetComponent<MeshRenderer>().material = GreenMat;
-                    Debug.LogFormat("[Timing is Everything #{0}] Stage 3 automatically complete due to time becoming under 5 seconds. Module Solved.", moduleId, strA, strB, strC);
+                    Debug.LogFormat(
+                        "[Timing is Everything #{0}] Stage 3 automatically complete due to time becoming under 5 seconds. Module Solved.",
+                        moduleId);
                 }
-            } else if (zenMode == true)
+            }
+            else if (zenMode)
             {
                 if (stages == 0)
                 {
@@ -278,7 +294,8 @@ public class timingIsEverythingScript : MonoBehaviour
                         GenerateStrings(timeB, strB, 2);
                         GenerateStrings(timeA, strA, 1);
                         Text.text = strC;
-                        Debug.LogFormat("[Timing is Everything #{0}] Missed Stage 1 time. Strike! New time: {1}", moduleId, strC);
+                        Debug.LogFormat("[Timing is Everything #{0}] Missed Stage 1 time. Strike! New time: {1}",
+                            moduleId, strC);
                         Debug.Log("OKAY: " + timeA + " " + timeB + " " + timeC);
                     }
                 }
@@ -292,7 +309,8 @@ public class timingIsEverythingScript : MonoBehaviour
                         GenerateStrings(timeB, strB, 2);
                         GenerateStrings(timeA, strA, 1);
                         Text.text = strB;
-                        Debug.LogFormat("[Timing is Everything #{0}] Missed Stage 2 time. Strike! New time: {1}", moduleId, strB);
+                        Debug.LogFormat("[Timing is Everything #{0}] Missed Stage 2 time. Strike! New time: {1}",
+                            moduleId, strB);
                         Debug.Log("OKAY: " + timeA + " " + timeB + " " + timeC);
                     }
                 }
@@ -304,7 +322,8 @@ public class timingIsEverythingScript : MonoBehaviour
                         timeA = timeA + (timeA / 2 - (timeA / 2) % 1);
                         GenerateStrings(timeA, strA, 1);
                         Text.text = strA;
-                        Debug.LogFormat("[Timing is Everything #{0}] Missed Stage 3 time. Strike! New time: {1}", moduleId, strA);
+                        Debug.LogFormat("[Timing is Everything #{0}] Missed Stage 3 time. Strike! New time: {1}",
+                            moduleId, strA);
                         Debug.Log("OKAY: " + timeA + " " + timeB + " " + timeC);
                     }
                 }
@@ -314,44 +333,54 @@ public class timingIsEverythingScript : MonoBehaviour
                     active = true;
                 }
 
-                if (timeA == timeB && active == true && stages == 0)
+                if (timeA == timeB && active && stages == 0)
                 {
-                    if (zenMode == false) {
-                    stages = 1;
-                    Text.text = strB;
-                    Lights[0].GetComponent<MeshRenderer>().material = GreenMat;
-                    Debug.LogFormat("[Timing is Everything #{0}] Stage 1 automatically complete due to time becoming the same as Stage 2. {1} {2} {3}", moduleId, strA, strB, strC);
+                    if (zenMode == false)
+                    {
+                        stages = 1;
+                        Text.text = strB;
+                        Lights[0].GetComponent<MeshRenderer>().material = GreenMat;
+                        Debug.LogFormat(
+                            "[Timing is Everything #{0}] Stage 1 automatically complete due to time becoming the same as Stage 2. {1} {2} {3}",
+                            moduleId, strA, strB, strC);
                     }
                     else
                     {
                         timeA = timeA * 2;
                     }
                 }
-                if (timeB == timeC && active == true && stages == 1)
+
+                if (timeB == timeC && active && stages == 1)
                 {
                     stages = 2;
                     Text.text = strC;
-                    if (zenMode == true)
+                    if (zenMode)
                     {
                         Text.text = strA;
                     }
+
                     Lights[1].GetComponent<MeshRenderer>().material = GreenMat;
-                    Debug.LogFormat("[Timing is Everything #{0}] Stage 2 automatically complete due to time becoming the same as Stage 3.", moduleId, strA, strB, strC);
+                    Debug.LogFormat(
+                        "[Timing is Everything #{0}] Stage 2 automatically complete due to time becoming the same as Stage 3.",
+                        moduleId, strA, strB, strC);
                 }
-                if (timeC < 5 && active == true && stages == 2)
+
+                if (timeC < 5 && active && stages == 2)
                 {
                     GetComponent<KMBombModule>().HandlePass();
                     moduleSolved = true;
                     stages = 3;
                     Text.text = "!!!";
                     Lights[2].GetComponent<MeshRenderer>().material = GreenMat;
-                    Debug.LogFormat("[Timing is Everything #{0}] Stage 3 automatically complete due to time becoming under 5 seconds. Module Solved.", moduleId, strA, strB, strC);
+                    Debug.LogFormat(
+                        "[Timing is Everything #{0}] Stage 3 automatically complete due to time becoming under 5 seconds. Module Solved.",
+                        moduleId, strA, strB, strC);
                 }
             }
         }
     }
 
-    void PressButton()
+    private void PressButton()
     {
         if (moduleSolved || !moduleReady)
             return;
@@ -388,16 +417,20 @@ public class timingIsEverythingScript : MonoBehaviour
             else if (stages != 3)
             {
                 GetComponent<KMBombModule>().HandleStrike();
-                if (timeMode == true)
+                if (timeMode)
                 {
-                    Debug.LogFormat("[Timing is Everything #{0}] Submit pressed at the wrong time of '{1}' on Stage {2}. Strike!", moduleId, Bomb.GetFormattedTime(), stages + 1);
+                    Debug.LogFormat(
+                        "[Timing is Everything #{0}] Submit pressed at the wrong time of '{1}' on Stage {2}. Strike!",
+                        moduleId, Bomb.GetFormattedTime(), stages + 1);
                 }
                 else
                 {
-                    Debug.LogFormat("[Timing is Everything #{0}] Too early on Stage {1}. Strike!", moduleId, stages + 1);
+                    Debug.LogFormat("[Timing is Everything #{0}] Too early on Stage {1}. Strike!", moduleId,
+                        stages + 1);
                 }
             }
-        } else
+        }
+        else
         {
             if (stages == 0 && Mathf.Floor(Bomb.GetTime()) == timeC)
             {
@@ -426,37 +459,39 @@ public class timingIsEverythingScript : MonoBehaviour
                 Lights[2].GetComponent<MeshRenderer>().material = GreenMat;
                 Debug.LogFormat("[Timing is Everything #{0}] Stage 3 complete, module solved.", moduleId);
                 tpCorrect = true;
-
             }
             else if (stages != 3)
             {
                 GetComponent<KMBombModule>().HandleStrike();
-                if (timeMode == true)
+                if (timeMode)
                 {
-                    Debug.LogFormat("[Timing is Everything #{0}] Submit pressed at the wrong time of '{1}' on Stage {2}. Strike!", moduleId, Bomb.GetFormattedTime(), stages + 1);
+                    Debug.LogFormat(
+                        "[Timing is Everything #{0}] Submit pressed at the wrong time of '{1}' on Stage {2}. Strike!",
+                        moduleId, Bomb.GetFormattedTime(), stages + 1);
                 }
                 else
                 {
-                    Debug.LogFormat("[Timing is Everything #{0}] Too early on Stage {1}. Strike!", moduleId, stages + 1);
+                    Debug.LogFormat("[Timing is Everything #{0}] Too early on Stage {1}. Strike!", moduleId,
+                        stages + 1);
                 }
             }
         }
     }
 
     //twitch plays
-    #pragma warning disable 414
-    private readonly string TwitchHelpMessage = @"!{0} submit|press at|on <time> [Presses the submit button at the specified time.]";
-    #pragma warning restore 414
-    IEnumerator ProcessTwitchCommand(string command)
+#pragma warning disable 414
+    private readonly string TwitchHelpMessage =
+        @"!{0} submit|press at|on <time> [Presses the submit button at the specified time.]";
+#pragma warning restore 414
+    private IEnumerator ProcessTwitchCommand(string command)
     {
-        Match m;
-        int commandSeconds;
-
-        m = Regex.Match(command, @"^(?:submit|press)\s*(?:at|on)?\s*([0-9]+:)?([0-9]+):([0-5][0-9])$");
-        if (!m.Success || m.Groups[1].Success && int.Parse(m.Groups[2].Value) > 59) //Invalid command or time format with hour while having > 59 minutes (eg. 2:99:00)
+        var m = Regex.Match(command, @"^(?:submit|press)\s*(?:at|on)?\s*([0-9]+:)?([0-9]+):([0-5][0-9])$");
+        if (!m.Success || m.Groups[1].Success && int.Parse(m.Groups[2].Value) > 59
+        ) //Invalid command or time format with hour while having > 59 minutes (eg. 2:99:00)
             yield break;
 
-        commandSeconds = (!m.Groups[1].Success ? 0 : int.Parse(m.Groups[1].Value.Replace(":", ""))) * 3600 + int.Parse(m.Groups[2].Value) * 60 + int.Parse(m.Groups[3].Value);
+        var commandSeconds = (!m.Groups[1].Success ? 0 : int.Parse(m.Groups[1].Value.Replace(":", ""))) * 3600 +
+                             int.Parse(m.Groups[2].Value) * 60 + int.Parse(m.Groups[3].Value);
 
         if (!zenMode)
         {
@@ -465,7 +500,7 @@ public class timingIsEverythingScript : MonoBehaviour
         else if (Mathf.FloorToInt(Bomb.GetTime()) > commandSeconds) yield break;
 
         yield return null;
-        var timeToSkipTo = commandSeconds;
+        int timeToSkipTo;
         var music = false;
         if (zenMode)
         {
@@ -490,7 +525,16 @@ public class timingIsEverythingScript : MonoBehaviour
             yield return "awardpoints 1";
             tpCorrect = false;
         }
+    }
 
-        yield break;
+    private void TwitchHandleForcedSolve()
+    {
+        stages = 3;
+        moduleSolved = true;
+        Module.HandlePass();
+        Text.text = "!!!";
+        foreach (var l in Lights)
+            l.GetComponent<MeshRenderer>().material = GreenMat;
+        Debug.LogFormat("[Timing is Everything #{0}] Force solve requested by twitch plays.", moduleId);
     }
 }
